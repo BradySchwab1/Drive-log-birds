@@ -1,412 +1,401 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
+  <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Drive‑Log Bird Noter (Prototype)</title>
+  <title>One‑Tap Bird Logger</title>
   <style>
-    :root {
-      --bg: #0b0b0f;
-      --card: #14141a;
-      --text: #e8e8f0;
-      --muted: #a9a9b2;
-      --accent: #6ee7ff;
-      --danger: #ff6b6b;
-      --ok: #7cf29c;
-      --btn: #1f1f29;
-      --btnHover: #262636;
+    :root{
+      --bg:#0b1220; --card:#121a2b; --muted:#93a0b3; --text:#eaf2ff; --accent:#5cc8ff; --ok:#25d366; --warn:#ffb020; --danger:#ff5c5c;
     }
-    * { box-sizing: border-box; }
-    html, body { height: 100%; }
-    body {
-      margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial, "Apple Color Emoji", "Segoe UI Emoji";
-      background: radial-gradient(1200px 800px at 70% -20%, #1e1e2a 0%, var(--bg) 60%);
-      color: var(--text);
-      -webkit-user-select: none; user-select: none;
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+      background:var(--bg); color:var(--text);
     }
-    .wrap { max-width: 980px; margin: 0 auto; padding: 20px; }
-    header { display:flex; align-items:center; gap:12px; justify-content:space-between; }
-    h1 { font-size: 1.3rem; margin: 0; font-weight: 700; letter-spacing: 0.2px; }
-    .pill { font-size:.85rem; color: var(--muted); }
-    .row { display:flex; gap:12px; flex-wrap: wrap; align-items:center; }
-    .card { background: var(--card); border: 1px solid #222234; border-radius: 16px; padding: 14px; }
-    .grid { display:grid; gap: 10px; grid-template-columns: repeat(3, 1fr); }
-    @media (min-width: 680px) { .grid { grid-template-columns: repeat(4, 1fr);} }
-    @media (min-width: 920px) { .grid { grid-template-columns: repeat(5, 1fr);} }
-    .species-btn {
-      background: var(--btn);
-      border: 1px solid #2b2b3f;
-      border-radius: 16px;
-      padding: 18px 10px;
-      min-height: 76px;
-      font-size: 1rem;
-      font-weight: 700;
-      letter-spacing: .2px;
-      text-align: center;
-      color: var(--text);
-      cursor: pointer;
-      transition: transform .04s ease, background .2s ease, border-color .2s ease;
+    header{position:sticky; top:0; z-index:10; background:linear-gradient(180deg, rgba(11,18,32,.95), rgba(11,18,32,.75)); backdrop-filter: blur(6px);
+      border-bottom:1px solid #223049}
+    .wrap{max-width:880px; margin:0 auto; padding:12px}
+    h1{font-size:20px; margin:6px 0}
+    #status{font-size:12px; color:var(--muted)}
+
+    .grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px}
+    @media (min-width:480px){.grid{grid-template-columns:repeat(3,1fr)}}
+    @media (min-width:720px){.grid{grid-template-columns:repeat(4,1fr)}}
+
+    .card{background:var(--card); border:1px solid #223049; border-radius:16px; padding:12px; box-shadow: 0 4px 14px rgba(0,0,0,.25)}
+    .row{display:flex; gap:8px; align-items:center}
+    .row-grow{display:flex; gap:8px; align-items:center; justify-content:space-between}
+    .chip{font-size:12px; color:var(--muted)}
+
+    button{
+      border:none; border-radius:14px; padding:14px 16px; font-weight:600; font-size:16px; cursor:pointer;
+      background:#1a2843; color:var(--text); border:1px solid #2a3b5f; box-shadow: 0 3px 10px rgba(0,0,0,.3);
       touch-action: manipulation;
     }
-    .species-btn:active { transform: scale(.98); }
-    .species-btn:hover { background: var(--btnHover); border-color:#3a3a54; }
-    .species-btn small { display:block; font-weight:600; font-size:.72rem; color:var(--muted); margin-top:6px; }
-    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
-    .toolbar button, .toolbar input, select {
-      background: var(--btn); color: var(--text);
-      border: 1px solid #2b2b3f;
-      border-radius: 12px; padding: 10px 12px; font-size:.95rem;
+    button.big{font-size:18px; padding:18px 16px}
+    button:active{transform:translateY(1px)}
+    .btn-accent{background:#0b2a3a; border-color:#0c4864}
+    .btn-ok{background:#0e3d2d; border-color:#1d6c52}
+    .btn-warn{background:#3a300b; border-color:#6b571d}
+    .btn-danger{background:#3a0b0b; border-color:#6b1d1d}
+
+    .species-btn{display:flex; align-items:center; justify-content:space-between; gap:8px; width:100%;}
+    .species-name{font-size:17px; font-weight:700; text-align:left}
+    .count-badge{font-size:12px; background:#0e213a; padding:6px 10px; border-radius:999px; border:1px solid #2a3b5f}
+
+    .toolbar{position:sticky; bottom:0; z-index:10; background:linear-gradient(0deg, rgba(11,18,32,.95), rgba(11,18,32,.6)); border-top:1px solid #223049}
+    .toolbar .wrap{display:flex; gap:8px}
+    .toolbar button{flex:1}
+
+    input, textarea{
+      width:100%; background:#0f1728; border:1px solid #2a3b5f; color:var(--text); border-radius:12px; padding:12px; font-size:14px;
     }
-    .toolbar button { cursor: pointer; }
-    .toolbar button:hover { background: var(--btnHover); }
-    #status { font-size:.9rem; color: var(--muted); margin-left:auto; }
-    .footer { color: var(--muted); font-size:.8rem; text-align:center; margin-top: 12px; }
-    .log-table { width:100%; border-collapse: collapse; margin-top: 8px; font-size:.92rem; }
-    .log-table th, .log-table td { border-bottom: 1px solid #26263a; padding: 8px 6px; text-align:left; }
-    .log-table th { color: #cfd0ff; font-weight:700; }
-    .tag { padding: 2px 8px; border-radius: 999px; border:1px solid #2f2f43; background:#1b1b26; font-size:.75rem; color:#c2c2cf; }
-    .ok { color: var(--ok); }
-    .warn { color: #ffd166; }
-    .danger { color: var(--danger); }
-    .row.compact { gap:6px; }
-    .counter-badge { display:inline-block; min-width: 26px; height: 24px; padding:0 8px; border-radius: 999px; background:#232336; border:1px solid #2f2f43; line-height:24px; font-size:.85rem; color:#cfd0ff; }
-    .sr-only { position:absolute; left:-9999px; }
-    .mic-on { outline: 2px solid var(--accent); box-shadow:0 0 0 4px rgba(110,231,255,.1); }
-    .note { color:#b7b7c5; font-size:.86rem; }
-    .danger-outline { outline: 2px solid rgba(255,107,107,.4); }
+    label{font-size:12px; color:var(--muted); display:block; margin-bottom:6px}
+
+    .toast{position:fixed; left:50%; bottom:84px; transform:translateX(-50%);
+      background:#0e213a; border:1px solid #2a3b5f; padding:10px 14px; border-radius:999px; font-size:14px; display:none}
+
+    table{width:100%; border-collapse:collapse}
+    th,td{border-bottom:1px solid #243149; padding:8px 6px; font-size:12px}
+    th{color:#a8b4c6; text-align:left}
+    .mono{font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace}
+
+    .pill{padding:4px 8px; border:1px solid #2a3b5f; border-radius:999px; font-size:12px; color:var(--muted)}
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>Drive‑Log Bird Noter <span class="pill">(Prototype)</span></h1>
-      <div id="status">GPS: <span id="gpsStatus">requesting…</span> • Records: <span id="recordCount">0</span></div>
-    </header>
-
-    <section class="card" aria-label="Quick species buttons">
-      <div class="row toolbar">
-        <button id="addSpeciesBtn" title="Add a quick button">＋ Add Species</button>
-        <input id="newSpeciesInput" placeholder="e.g., Red-tailed Hawk" aria-label="New species name" />
-        <select id="tapMode">
-          <option value="+1">Tap adds +1</option>
-          <option value="event">Tap adds event (count=1)</option>
-        </select>
-        <button id="micBtn" title="Voice (Web Speech API)">🎙️ Voice</button>
-        <button id="exportBtn" title="Download CSV">⬇︎ Export CSV</button>
-        <button id="clearBtn" title="Clear all records" style="margin-left:auto">🗑️ Clear</button>
+  <header>
+    <div class="wrap row-grow">
+      <div>
+        <h1>One‑Tap Bird Logger</h1>
+        <div id="status">Ready. GPS: <span id="gpsStatus">off</span></div>
       </div>
-      <div class="grid" id="speciesGrid" role="group" aria-label="Species quick buttons"></div>
-      <div class="row compact" style="margin-top:10px">
-        <span class="note">Tap a button to log species + current GPS + timestamp. Voice recognizes species in your list (adds free‑text if not matched).</span>
+      <div class="row">
+        <button id="micBtn" title="Voice log (press to speak)">🎙️ Voice</button>
+        <button id="addBtn" class="btn-accent" title="Add a species button">＋ Add</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap" id="app">
+    <section class="card" aria-label="Tips">
+      <div class="row-grow">
+        <div class="chip">Tap a species to log one sighting with GPS & time. Long‑press to subtract.</div>
+        <div class="pill" id="accPill" title="Last GPS accuracy">±– m</div>
       </div>
     </section>
 
-    <section class="card" aria-label="Recent logs">
-      <div class="row" style="justify-content:space-between; align-items: baseline;">
-        <h2 style="margin:0; font-size:1.05rem">Recent Records</h2>
-        <label class="note"><input type="checkbox" id="showCounts" /> Show per‑species counters on buttons</label>
-      </div>
-      <table class="log-table" id="logTable" aria-describedby="logHelp">
-        <thead>
-          <tr>
-            <th>Time</th>
-            <th>Species</th>
-            <th>Lat</th>
-            <th>Lon</th>
-            <th>±m</th>
-            <th>Mode</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody id="logBody"></tbody>
-      </table>
-      <div id="logHelp" class="sr-only">Table of recorded sightings with time, species, latitude, longitude, accuracy, and entry mode.</div>
+    <section class="grid" id="speciesGrid" aria-label="Species buttons">
+      <!-- Species buttons injected here -->
     </section>
 
-    <div class="footer">Designed for quick, eyes‑off logging. For safety, only use hands‑free or with a passenger.</div>
-  </div>
+    <section class="card" style="margin-top:14px">
+      <div class="row-grow" style="margin-bottom:8px">
+        <strong>Logs</strong>
+        <div class="row">
+          <button id="exportBtn" class="btn-ok">Export CSV</button>
+          <button id="copyBtn" class="btn-ok" title="Copy CSV to clipboard">Copy CSV</button>
+          <button id="clearBtn" class="btn-danger">Clear</button>
+        </div>
+      </div>
+      <div style="max-height:260px; overflow:auto">
+        <table id="logTable" aria-label="Log table">
+          <thead>
+            <tr>
+              <th>Time</th><th>Species</th><th class="mono">Lat</th><th class="mono">Lon</th><th>Acc (m)</th><th>Method</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
 
-<script>
-(function(){
-  // ---- Storage shim (fixes iOS Safari Private/Files app localStorage crashes) ----
-  const memoryStore = (()=>{ const m = new Map(); return { getItem:k=>m.has(k)?m.get(k):null, setItem:(k,v)=>{m.set(k,String(v));}, removeItem:k=>m.delete(k) }; })();
-  function storageOK(){ try{ const k='__probe__'; window.localStorage.setItem(k,'1'); window.localStorage.removeItem(k); return true; } catch(e){ return false; } }
-  const store = storageOK() ? window.localStorage : memoryStore;
-  const usingMemory = store === memoryStore;
+    <section class="card" style="margin-top:14px">
+      <details>
+        <summary><strong>Settings</strong></summary>
+        <div style="margin-top:10px">
+          <label>Species list (comma‑separated). Example: Red‑tailed Hawk, American Kestrel, Turkey Vulture</label>
+          <textarea id="speciesInput" rows="3" placeholder="Enter common names…"></textarea>
+          <div class="row" style="margin-top:8px">
+            <button id="saveSpecies" class="btn-accent">Save species</button>
+            <button id="resetSpecies" class="btn-warn">Reset defaults</button>
+          </div>
+          <div style="margin-top:10px; font-size:12px; color:var(--muted)">GPS is captured each time you log. Accuracy shown above; if it looks high, wait a moment for a better fix.</div>
+        </div>
+      </details>
+    </section>
+  </main>
 
-  const DEFAULT_SPECIES = [
-    "Red-tailed Hawk","American Kestrel","Turkey Vulture","Red-shouldered Hawk","Northern Harrier",
-    "Great Horned Owl","Caracara","Black Vulture","Bald Eagle","Osprey"
-  ];
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
 
-  const speciesGrid = document.getElementById('speciesGrid');
-  const newSpeciesInput = document.getElementById('newSpeciesInput');
-  const addSpeciesBtn = document.getElementById('addSpeciesBtn');
-  const exportBtn = document.getElementById('exportBtn');
-  const clearBtn = document.getElementById('clearBtn');
-  const micBtn = document.getElementById('micBtn');
-  const gpsStatusEl = document.getElementById('gpsStatus');
-  const recordCountEl = document.getElementById('recordCount');
-  const tapModeSel = document.getElementById('tapMode');
-  const showCounts = document.getElementById('showCounts');
-  const logBody = document.getElementById('logBody');
+  <nav class="toolbar">
+    <div class="wrap">
+      <button id="gpsBtn" class="btn-accent big">📍 Enable GPS</button>
+      <button id="undoBtn" class="big">↶ Undo</button>
+    </div>
+  </nav>
 
-  let db = load('db');
-  if(!db){
-    const sp = load('species') || DEFAULT_SPECIES;
-    db = { species: sp, records: [] };
-    // best-effort save; ignore failures
-    try { save('species', sp); save('db', db); } catch(_){}
-  }
+  <script>
+    // --- State ---
+    const DEFAULT_SPECIES = [
+      "Red-tailed Hawk","American Kestrel","Turkey Vulture","Red-shouldered Hawk",
+      "Northern Harrier","Cooper's Hawk","Bald Eagle","Killdeer"
+    ];
 
-  let lastPos = null; let watchId = null; let speech = null; let micOn = false;
-  startGPS();
-  // If storage is memory-only, let the user know (iOS Private Mode / Files viewer)
-  if(usingMemory){
-    const status = document.getElementById('status');
-    const warn = document.createElement('span');
-    warn.className = 'warn';
-    warn.style.marginLeft = '8px';
-    warn.textContent = 'Storage: memory-only (changes vanish if you close tab)';
-    status.appendChild(warn);
-  }
-  renderSpecies();
-  renderTable();
-  updateCountsOnButtons();
-
-  addSpeciesBtn.addEventListener('click', () => {
-    const name = (newSpeciesInput.value || '').trim();
-    if(!name) { pulse(newSpeciesInput); return; }
-    if(db.species.includes(name)) { pulse(newSpeciesInput); return; }
-    db.species.push(name); save('species', db.species); save('db', db); newSpeciesInput.value='';
-    renderSpecies();
-  });
-
-  showCounts.addEventListener('change', updateCountsOnButtons);
-
-  exportBtn.addEventListener('click', () => {
-    const csv = toCSV(db.records);
-    const blob = new Blob([csv], {type:'text/csv'});
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    const date = new Date();
-    a.href = url; a.download = `drive-log-birds_${date.toISOString().slice(0,19).replace(/[:T]/g,'-')}.csv`;
-    document.body.appendChild(a); a.click(); a.remove();
-    URL.revokeObjectURL(url);
-  });
-
-  clearBtn.addEventListener('click', () => {
-    if(!confirm('Clear all records?')) return;
-    db.records = []; save('db', db); renderTable(); updateCountsOnButtons();
-  });
-
-  micBtn.addEventListener('click', toggleMic);
-
-  function renderSpecies(){
-    speciesGrid.innerHTML = '';
-    db.species.forEach((sp, idx) => {
-      const btn = document.createElement('button');
-      btn.className = 'species-btn';
-      btn.innerHTML = `<span>${escapeHtml(sp)}</span><small class="hint">tap to log</small>`;
-      btn.addEventListener('click', () => logSpecies(sp, 'tap'));
-      btn.addEventListener('contextmenu', (e) => { e.preventDefault(); editSpecies(idx, sp, btn); });
-      speciesGrid.appendChild(btn);
-    });
-    updateCountsOnButtons();
-  }
-
-  function editSpecies(idx, sp, el){
-    const action = prompt(`Edit species or type DELETE to remove:\n${sp}` , sp);
-    if(action === null) return;
-    if(action.trim().toUpperCase() === 'DELETE'){
-      db.species.splice(idx,1); save('species', db.species); save('db', db); renderSpecies(); return;
-    }
-    const val = action.trim();
-    if(!val) return;
-    db.species[idx] = val; save('species', db.species); save('db', db); renderSpecies();
-  }
-
-  function logSpecies(species, mode){
-    if(!lastPos){ pulse(gpsStatusEl); }
-    const now = new Date();
-    const rec = {
-      ts: now.toISOString(),
-      species,
-      lat: lastPos?.coords?.latitude ?? null,
-      lon: lastPos?.coords?.longitude ?? null,
-      acc_m: lastPos?.coords?.accuracy ?? null,
-      method: mode,
+    const state = {
+      species: loadSpecies(),
+      logs: loadLogs(),
+      lastFix: null,
+      watchId: null,
+      counts: {},
+      recognizing: false
     };
 
-    if(tapModeSel.value === '+1'){
-      // aggregate count per species & minute if same minute and ~same location
-      // but also push atomic entry for auditing
-      db.records.push({...rec, count: 1});
-    } else {
-      db.records.push({...rec, count: 1});
+    function loadSpecies(){
+      try{ const s = JSON.parse(localStorage.getItem('speciesList')); if(Array.isArray(s) && s.length) return s; }catch{}
+      return DEFAULT_SPECIES;
+    }
+    function saveSpeciesList(arr){ localStorage.setItem('speciesList', JSON.stringify(arr)); }
+
+    function loadLogs(){
+      try{ const l = JSON.parse(localStorage.getItem('birdLogs')); if(Array.isArray(l)) return l; }catch{}
+      return [];
+    }
+    function saveLogs(){ localStorage.setItem('birdLogs', JSON.stringify(state.logs)); }
+
+    // --- UI helpers ---
+    const speciesGrid = document.getElementById('speciesGrid');
+    const logTableBody = document.querySelector('#logTable tbody');
+    const gpsStatusEl = document.getElementById('gpsStatus');
+    const accPill = document.getElementById('accPill');
+    const toast = document.getElementById('toast');
+
+    function renderSpecies(){
+      speciesGrid.innerHTML = '';
+      state.counts = {};
+      state.species.forEach(name => {
+        state.counts[name] = 0;
+        const btn = document.createElement('button');
+        btn.className = 'species-btn';
+        btn.innerHTML = `<span class="species-name">${escapeHtml(name)}</span><span class="count-badge" id="count-${slug(name)}">0</span>`;
+        btn.addEventListener('click', () => quickLog(name, 1, 'tap'));
+        // long-press to subtract
+        let pressTimer = null;
+        btn.addEventListener('touchstart', () => { pressTimer = setTimeout(()=> quickLog(name, -1, 'longpress'), 500); }, {passive:true});
+        btn.addEventListener('touchend', () => { if(pressTimer){ clearTimeout(pressTimer); pressTimer=null; }});
+        speciesGrid.appendChild(btn);
+      });
     }
 
-    save('db', db);
-    renderTable();
-    updateCountsOnButtons();
-    flashOK();
-  }
+    function renderLogs(){
+      logTableBody.innerHTML='';
+      state.logs.slice().reverse().forEach(entry => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${fmtTime(entry.t)}</td><td>${escapeHtml(entry.species)}</td>`+
+          `<td class="mono">${entry.lat?.toFixed?.(5) ?? ''}</td>`+
+          `<td class="mono">${entry.lon?.toFixed?.(5) ?? ''}</td>`+
+          `<td>${entry.acc ?? ''}</td><td>${entry.method}</td>`;
+        logTableBody.appendChild(tr);
+      });
+    }
 
-  function renderTable(){
-    recordCountEl.textContent = String(db.records.length);
-    const rows = db.records.slice(-100).reverse().map((r, i) => {
-      const dt = new Date(r.ts);
-      const time = dt.toLocaleString();
-      const acc = r.acc_m != null ? Math.round(r.acc_m) : '';
-      const lat = r.lat != null ? r.lat.toFixed(5) : '';
-      const lon = r.lon != null ? r.lon.toFixed(5) : '';
-      return `<tr>
-        <td><span title="${dt.toISOString()}">${time}</span></td>
-        <td>${escapeHtml(r.species)}${r.count>1?` <span class="tag">x${r.count}</span>`:''}</td>
-        <td>${lat}</td>
-        <td>${lon}</td>
-        <td>${acc}</td>
-        <td>${r.method}</td>
-        <td><button data-idx="${db.records.length-1 - i}" class="miniDel" title="Delete">✕</button></td>
-      </tr>`;
-    }).join('');
-    logBody.innerHTML = rows || `<tr><td colspan="7" class="note">No records yet.</td></tr>`;
-    document.querySelectorAll('.miniDel').forEach(btn => btn.addEventListener('click', (e)=>{
-      const idx = +e.currentTarget.getAttribute('data-idx');
-      db.records.splice(idx,1); save('db', db); renderTable(); updateCountsOnButtons();
-    }));
-  }
+    function toastMsg(msg){
+      toast.textContent = msg; toast.style.display='block';
+      clearTimeout(toast._t);
+      toast._t = setTimeout(()=> toast.style.display='none', 1200);
+    }
 
-  function updateCountsOnButtons(){
-    const counts = {};
-    db.records.forEach(r => counts[r.species] = (counts[r.species]||0) + (r.count||1));
-    const show = showCounts.checked;
-    document.querySelectorAll('.species-btn').forEach((btn, i) => {
-      const sp = db.species[i];
-      const c = counts[sp] || 0;
-      btn.querySelector('.hint').innerHTML = show ? `<span class="counter-badge" title="Logged count">${c}</span>` : 'tap to log';
-    });
-  }
+    function slug(s){ return s.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+    function escapeHtml(s){ return s.replace(/[&<>"']/g, c=> ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+    function fmtTime(iso){ const d=new Date(iso); return d.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}); }
 
-  function toCSV(records){
-    const header = ['timestamp_iso','species','lat','lon','accuracy_m','count','method'];
-    const lines = [header.join(',')];
-    records.forEach(r => {
-      const row = [r.ts, r.species, r.lat??'', r.lon??'', r.acc_m??'', r.count??1, r.method];
-      lines.push(row.map(csvEscape).join(','));
-    });
-    return lines.join('\n');
-  }
+    // --- Geolocation ---
+    const gpsBtn = document.getElementById('gpsBtn');
+    gpsBtn.addEventListener('click', toggleGPS);
 
-  function csvEscape(v){
-    if(v===null || v===undefined) return '';
-    const s = String(v);
-    if(/[",\n]/.test(s)) return '"' + s.replace(/"/g,'""') + '"';
-    return s;
-  }
-
-  function load(key){
-    try { return JSON.parse(store.getItem('driveLogBirds:'+key)); } catch(e){ return null; }
-  } catch(e){ return null; }
-  }
-  function save(key, val){
-    try { store.setItem('driveLogBirds:'+key, JSON.stringify(val)); }
-    catch(e){ /* fall back is already active; ignore quota/security errors */ }
-  }
-
-  function startGPS(){
-    if(!('geolocation' in navigator)) { gpsStatusEl.textContent = 'unavailable'; gpsStatusEl.className='danger'; return; }
-    gpsStatusEl.textContent = 'requesting…';
-    watchId = navigator.geolocation.watchPosition(pos => {
-      lastPos = pos;
-      const acc = Math.round(pos.coords.accuracy);
-      gpsStatusEl.textContent = `${acc} m`;
-      gpsStatusEl.className = acc<20? 'ok' : (acc<60? 'warn' : '');
-    }, err => {
-      gpsStatusEl.textContent = err.message;
-      gpsStatusEl.className='danger';
-      // Geolocation requires HTTPS or localhost in most browsers
-      if(location.protocol !== 'https:' && location.hostname !== 'localhost'){
-        gpsStatusEl.textContent += ' (tip: open this over HTTPS for GPS)';
+    function toggleGPS(){
+      if(state.watchId){
+        navigator.geolocation.clearWatch(state.watchId);
+        state.watchId = null; state.lastFix = null; gpsStatusEl.textContent = 'off'; accPill.textContent = '±– m';
+        gpsBtn.textContent = '📍 Enable GPS';
+        return;
       }
-    }, { enableHighAccuracy: true, maximumAge: 5000, timeout: 8000 });
-  }
-
-  function toggleMic(){
-    if(!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)){
-      alert('Speech recognition not supported in this browser. Try Chrome on Android or desktop.');
-      return;
+      if(!('geolocation' in navigator)) { alert('Geolocation not supported'); return; }
+      state.watchId = navigator.geolocation.watchPosition(pos => {
+        state.lastFix = pos;
+        gpsStatusEl.textContent = 'on';
+        const acc = Math.round(pos.coords.accuracy||0);
+        accPill.textContent = `±${acc} m`;
+      }, err => {
+        console.warn(err); toastMsg('GPS error');
+      }, { enableHighAccuracy:true, maximumAge:5000, timeout:10000 });
+      gpsBtn.textContent = '📍 Disable GPS';
     }
-    if(!speech){
-      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-      speech = new SR();
-      speech.lang = 'en-US';
-      speech.interimResults = false;
-      speech.continuous = true;
-      speech.onresult = (ev) => {
-        for(let i=ev.resultIndex; i<ev.results.length; i++){
-          if(ev.results[i].isFinal){
-            const said = ev.results[i][0].transcript.trim();
-            handleTranscript(said);
-          }
+
+    // --- Logging ---
+    function quickLog(name, delta, method){
+      if(delta < 0){
+        // find last matching entry to remove
+        const idx = state.logs.slice().reverse().findIndex(e=> e.species===name);
+        if(idx !== -1){
+          const realIdx = state.logs.length - 1 - idx;
+          state.logs.splice(realIdx,1); saveLogs(); renderLogs();
+          state.counts[name] = Math.max(0, (state.counts[name]||0) - 1);
+          updateCountBadge(name);
+          toastMsg(`Removed last ${name}`);
         }
+        return;
+      }
+      const fix = state.lastFix?.coords || {};
+      const entry = {
+        t: new Date().toISOString(),
+        species: name,
+        lat: typeof fix.latitude==='number'? fix.latitude : null,
+        lon: typeof fix.longitude==='number'? fix.longitude : null,
+        acc: fix.accuracy ? Math.round(fix.accuracy) : null,
+        method
       };
-      speech.onerror = (e) => { console.warn('Speech error', e.error); pulse(micBtn); };
-      speech.onend = () => { if(micOn) tryStart(); };
+      state.logs.push(entry); saveLogs(); renderLogs();
+      state.counts[name] = (state.counts[name]||0) + 1; updateCountBadge(name);
+      toastMsg(`${name} logged`);
     }
-    micOn = !micOn;
-    micBtn.classList.toggle('mic-on', micOn);
-    micBtn.textContent = micOn ? '🎙️ Listening…' : '🎙️ Voice';
-    if(micOn) tryStart(); else tryStop();
 
-    function tryStart(){ try { speech.start(); } catch(e){ /* already started */ } }
-    function tryStop(){ try { speech.stop(); } catch(e){ /* ignore */ } }
-  }
-
-  function handleTranscript(text){
-    const cleaned = text.toLowerCase().replace(/[^a-z\-\s]/g,'').replace(/ +/g,' ').trim();
-    if(!cleaned) return;
-
-    // Fuzzy match to known species
-    const idx = bestSpeciesMatch(cleaned);
-    if(idx>=0){
-      logSpecies(db.species[idx], 'voice');
-    } else {
-      // Save as free text in species field so you can reconcile later
-      logSpecies(text, 'voice-free');
+    function updateCountBadge(name){
+      const el = document.getElementById('count-'+slug(name)); if(el) el.textContent = state.counts[name]||0;
     }
-  }
 
-  function bestSpeciesMatch(s){
-    let best = -1, bestScore = 0;
-    const norm = (x)=> x.toLowerCase().replace(/[^a-z\-\s]/g,'').replace(/ +/g,' ').trim();
-    const words = new Set(s.split(' '));
-    db.species.forEach((sp, i) => {
-      const n = norm(sp);
-      const wsp = new Set(n.split(' '));
-      let overlap = 0; wsp.forEach(w=>{ if(words.has(w)) overlap++; });
-      let score = overlap / Math.max(1, wsp.size);
-      if(n===s) score += 0.5; // exact phrase bonus
-      if(score > bestScore && score >= 0.5) { bestScore = score; best = i; }
+    document.getElementById('undoBtn').addEventListener('click', ()=>{
+      const last = state.logs.pop(); if(!last){ toastMsg('Nothing to undo'); return; }
+      saveLogs(); renderLogs();
+      if(last && last.species){ state.counts[last.species] = Math.max(0,(state.counts[last.species]||1)-1); updateCountBadge(last.species); }
+      toastMsg('Last entry undone');
     });
-    return best;
-  }
 
-  function escapeHtml(s){
-    const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' };
-    return String(s).replace(/[&<>"']/g, c => map[c]);
-  }[c]));
-  }
+    // --- Species editing ---
+    const addBtn = document.getElementById('addBtn');
+    addBtn.addEventListener('click', ()=>{
+      const name = prompt('Species common name');
+      if(name && name.trim()){
+        state.species.push(name.trim()); saveSpeciesList(state.species); renderSpecies();
+      }
+    });
 
-  function pulse(el){
-    el.classList.add('danger-outline');
-    setTimeout(()=> el.classList.remove('danger-outline'), 500);
-  }
+    const speciesInput = document.getElementById('speciesInput');
+    const saveSpecies = document.getElementById('saveSpecies');
+    const resetSpecies = document.getElementById('resetSpecies');
 
-  function flashOK(){
-    document.body.animate([{backgroundColor:'rgba(124,242,156,.08)'},{backgroundColor:'transparent'}], {duration:300});
-  }
-})();
-</script>
+    saveSpecies.addEventListener('click', ()=>{
+      const arr = speciesInput.value.split(',').map(s=> s.trim()).filter(Boolean);
+      if(arr.length){ state.species = arr; saveSpeciesList(arr); renderSpecies(); toastMsg('Species saved'); }
+    });
+    resetSpecies.addEventListener('click', ()=>{
+      if(confirm('Reset to default species?')){ state.species = DEFAULT_SPECIES.slice(); saveSpeciesList(state.species); renderSpecies(); }
+    });
+
+    // preload textarea with current list
+    function preloadSpeciesTextarea(){ speciesInput.value = state.species.join(', '); }
+
+    // --- Export / Clear ---
+    function logsToCSV(){
+      const header = ['date','time','species','latitude','longitude','accuracy_m','method'];
+      const rows = state.logs.map(e=>{
+        const d = new Date(e.t);
+        const date = d.toISOString().slice(0,10);
+        const time = d.toTimeString().slice(0,8);
+        return [date,time,e.species, e.lat ?? '', e.lon ?? '', e.acc ?? '', e.method];
+      });
+      return [header].concat(rows).map(r=> r.map(csvEscape).join(',')).join('\n');
+    }
+    function csvEscape(v){
+      const s = String(v);
+      return /[",\n]/.test(s) ? '"'+ s.replace(/"/g,'""') +'"' : s;
+    }
+
+    document.getElementById('exportBtn').addEventListener('click', ()=>{
+      const csv = logsToCSV();
+      const blob = new Blob([csv], {type:'text/csv'});
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      const stamp = new Date().toISOString().replace(/[:T]/g,'-').slice(0,19);
+      a.download = `bird-logs-${stamp}.csv`;
+      a.click();
+      setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
+    });
+    document.getElementById('copyBtn').addEventListener('click', async ()=>{
+      try{ await navigator.clipboard.writeText(logsToCSV()); toastMsg('CSV copied'); }
+      catch{ toastMsg('Copy failed'); }
+    });
+
+    document.getElementById('clearBtn').addEventListener('click', ()=>{
+      if(!state.logs.length){ toastMsg('No logs'); return; }
+      if(confirm('Clear all logs?')){ state.logs = []; saveLogs(); renderLogs(); toastMsg('Logs cleared'); }
+    });
+
+    // --- Voice input (Web Speech API) ---
+    const micBtn = document.getElementById('micBtn');
+    let recognizer = null;
+
+    function initRecognizer(){
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if(!SR){ alert('Voice recognition not supported on this browser.'); return null; }
+      const r = new SR();
+      r.continuous = false; r.lang = 'en-US'; r.interimResults = false; r.maxAlternatives = 3;
+      r.onresult = (ev)=>{
+        const txt = ev.results[0][0].transcript.trim();
+        handleVoice(txt);
+      };
+      r.onerror = (e)=>{ console.warn('Speech error', e.error); toastMsg('Voice error'); toggleVoice(false); };
+      r.onend = ()=>{ toggleVoice(false); };
+      return r;
+    }
+
+    function handleVoice(spoken){
+      const said = spoken.toLowerCase();
+      // best match among species list using simple similarity
+      let best = null, bestScore = -1;
+      for(const s of state.species){
+        const score = similarity(s.toLowerCase(), said);
+        if(score > bestScore){ bestScore=score; best=s; }
+      }
+      if(best && bestScore > 0.45){
+        quickLog(best, 1, 'voice');
+      } else {
+        // offer to add as new species
+        if(confirm(`Heard: "${spoken}". Add as new species button?`)){
+          state.species.push(spoken);
+          saveSpeciesList(state.species); renderSpecies(); preloadSpeciesTextarea();
+          quickLog(spoken, 1, 'voice-new');
+        } else {
+          toastMsg('No match');
+        }
+      }
+    }
+
+    function similarity(a,b){
+      // Jaccard over trigrams for simplicity
+      const ta = trigrams(a), tb = trigrams(b);
+      const setA = new Set(ta), setB = new Set(tb);
+      let inter = 0; for(const t of setA){ if(setB.has(t)) inter++; }
+      const union = setA.size + setB.size - inter; return union? inter/union : 0;
+    }
+    function trigrams(s){ s = '  '+s+'  '; const v=[]; for(let i=0;i<s.length-2;i++) v.push(s.slice(i,i+3)); return v; }
+
+    function toggleVoice(force){
+      if(recognizer==null) recognizer = initRecognizer();
+      if(!recognizer) return;
+      const on = (typeof force==='boolean')? force : !state.recognizing;
+      if(on){ recognizer.start(); micBtn.textContent='🎙️ Listening…'; state.recognizing=true; }
+      else { try{recognizer.stop();}catch{} micBtn.textContent='🎙️ Voice'; state.recognizing=false; }
+    }
+    micBtn.addEventListener('click', ()=> toggleVoice());
+
+    // --- Init ---
+    function init(){
+      renderSpecies(); renderLogs(); preloadSpeciesTextarea();
+    }
+    init();
+  </script>
 </body>
 </html>
