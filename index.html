@@ -82,7 +82,7 @@
   <main class="wrap" id="app">
     <section class="card" aria-label="Tips">
       <div class="row-grow">
-        <div class="chip">Tap a species to log one sighting with GPS & time. Long‑press to subtract.</div>
+        <div class="chip">Tap a species to log a sighting with time and available GPS. Long‑press to subtract.</div>
         <div class="pill" id="accPill" title="Last GPS accuracy">±– m</div>
       </div>
     </section>
@@ -249,8 +249,12 @@
         return;
       }
       const fix = state.lastFix?.coords || {};
+      const now = new Date();
       const entry = {
-        t: new Date().toISOString(),
+        t: now.toISOString(),
+        // Keep the observation's local clock time even if exported from another timezone.
+        localDate: `${now.getFullYear()}-${pad2(now.getMonth()+1)}-${pad2(now.getDate())}`,
+        localTime: `${pad2(now.getHours())}:${pad2(now.getMinutes())}`,
         species: name,
         lat: typeof fix.latitude==='number'? fix.latitude : null,
         lon: typeof fix.longitude==='number'? fix.longitude : null,
@@ -298,33 +302,86 @@
     function preloadSpeciesTextarea(){ speciesInput.value = state.species.join(', '); }
 
     // --- Export / Clear ---
-    function logsToCSV(){
-      const header = ['date','time','species','latitude','longitude','accuracy_m','method'];
-      const rows = state.logs.map(e=>{
-        const d = new Date(e.t);
-        const date = d.toISOString().slice(0,10);
-        const time = d.toTimeString().slice(0,8);
-        return [date,time,e.species, e.lat ?? '', e.lon ?? '', e.acc ?? '', e.method];
-      });
-      return [header].concat(rows).map(r=> r.map(csvEscape).join(',')).join('\n');
+    function pad2(n){ return String(n).padStart(2, '0'); }
+
+    function observationClock(e){
+      // Older logs do not contain a saved local time. For those, use the
+      // timezone of the browser doing the export.
+      const d = new Date(e.t);
+      const date = /^\d{4}-\d{2}-\d{2}$/.test(e.localDate || '')
+        ? e.localDate
+        : `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`;
+      const time = /^\d{2}:\d{2}$/.test(e.localTime || '')
+        ? e.localTime
+        : `${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+      return {date, time, ebirdDate: `${date.slice(5,7)}/${date.slice(8,10)}/${date.slice(0,4)}`};
     }
+
     function csvEscape(v){
       const s = String(v);
       return /[",\n]/.test(s) ? '"'+ s.replace(/"/g,'""') +'"' : s;
     }
+    function rowsToCSV(rows){ return rows.map(r => r.map(csvEscape).join(',')).join('\r\n'); }
 
-    document.getElementById('exportBtn').addEventListener('click', ()=>{
-      const csv = logsToCSV();
-      const blob = new Blob([csv], {type:'text/csv'});
+    function validCoordinates(e){
+      return typeof e.lat === 'number' && Number.isFinite(e.lat) && e.lat >= -90 && e.lat <= 90 &&
+             typeof e.lon === 'number' && Number.isFinite(e.lon) && e.lon >= -180 && e.lon <= 180;
+    }
+
+    // eBird "Record Format": columns A-S, no header. Each row has a unique
+    // Location Name, so eBird does not group sightings taken at the same time/place.
+    function eBirdData(){
+      let skipped = 0;
+      const rows = [];
+      state.logs.forEach((e, i) => {
+        if(!validCoordinates(e)){ skipped++; return; }
+        const {date, time, ebirdDate} = observationClock(e);
+        // eBird asks for no literal quote marks or hard returns in field text.
+        const commonName = String(e.species).replace(/[",\r\n]/g, ' ').trim();
+        const location = `Bird Logger ${date} ${time.replace(':','-')} #${i+1}`;
+        rows.push([
+          commonName, '', '', 1, '',          // A-E: name, taxonomy, count, comments
+          location, e.lat.toFixed(6), e.lon.toFixed(6), // F-H: location
+          ebirdDate, time, '', '',            // I-L: date, time, state, country
+          'Incidental', 1, '', 'N', '', '', '' // M-S: protocol, observers, effort, comments
+        ]);
+      });
+      return {csv: rowsToCSV(rows), count: rows.length, skipped};
+    }
+
+    function downloadCSV(csv){
+      const blob = new Blob([csv], {type:'text/csv;charset=utf-8'});
+      if(blob.size > 1000000){
+        alert('The CSV exceeds eBird\'s 1 MB file limit. Export smaller batches.');
+        return;
+      }
       const a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      const stamp = new Date().toISOString().replace(/[:T]/g,'-').slice(0,19);
-      a.download = `bird-logs-${stamp}.csv`;
+      const url = URL.createObjectURL(blob);
+      a.href = url;
+      a.download = `bird-logs-${new Date().toISOString().replace(/[:T]/g,'-').slice(0,19)}.csv`;
       a.click();
-      setTimeout(()=> URL.revokeObjectURL(a.href), 1000);
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }
+
+    // Both CSV buttons use the same eBird Record Format data.
+    function getExportCSV(){
+      const {csv, count, skipped} = eBirdData();
+      if(!count){
+        alert('No GPS-tagged observations to export. Enable GPS and get a location fix before logging.');
+        return null;
+      }
+      if(skipped && !confirm(`${skipped} sighting(s) have no valid GPS coordinates and will not be included. Continue with the other ${count}?`)) return null;
+      return csv;
+    }
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const csv = getExportCSV();
+      if(csv !== null) downloadCSV(csv);
     });
-    document.getElementById('copyBtn').addEventListener('click', async ()=>{
-      try{ await navigator.clipboard.writeText(logsToCSV()); toastMsg('CSV copied'); }
+    document.getElementById('copyBtn').addEventListener('click', async () => {
+      const csv = getExportCSV();
+      if(csv === null) return;
+      try{ await navigator.clipboard.writeText(csv); toastMsg('CSV copied'); }
       catch{ toastMsg('Copy failed'); }
     });
 
